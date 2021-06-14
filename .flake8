@@ -13,6 +13,3 @@ max-line-length = 88
 exclude =
     .venv/
     .env/
-
-per-file-ignores =
-    __init__.py:F401 # imported but unused

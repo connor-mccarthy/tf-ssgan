@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 
 import tensorflow as tf
 from plot_keras_history import plot_history
@@ -11,12 +10,11 @@ from ganbert import GanBert
 
 
 def train() -> None:
-    model = GanBert()  # type: ignore
+    model = GanBert()
     model.compile(
         g_optimizer=tf.keras.optimizers.Adam(0.0004),
         d_optimizer=tf.keras.optimizers.Adam(0.0004),
     )
-    log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
     callbacks = [
         EarlyStopping(
             monitor="val_supervised_loss", patience=3, restore_best_weights=True
