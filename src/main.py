@@ -39,7 +39,7 @@ def post_fit(model: tf.keras.Model, results, history, loss_name: str) -> None:
 
     fig_path = os.path.join(RESULTS_DIR, f"{model.name}_training.png")
     plot_history(history, path=fig_path)
-    print(f"Saved {model.name} training figures to to {fig_path}.")
+    print(f"Saved {model.name} training figures to {fig_path}.")
 
     scores_path = os.path.join(RESULTS_DIR, f"{model.name}_scores.csv")
     scores = dict(zip(metric_names, results))
@@ -69,7 +69,7 @@ def fit_baseline_model(use_saved_weights=False) -> None:
         history = model.fit(
             train_ds,
             validation_data=val_ds,
-            epochs=100,
+            epochs=1000,
             callbacks=[
                 tf.keras.callbacks.TerminateOnNaN(),
                 tf.keras.callbacks.EarlyStopping(
@@ -107,7 +107,7 @@ def fit_ganbert(use_saved_weights=False) -> None:
         history = ganbert.fit(
             train_ds,
             validation_data=val_ds,
-            epochs=100,
+            epochs=1000,
             callbacks=[
                 tf.keras.callbacks.TerminateOnNaN(),
                 tf.keras.callbacks.EarlyStopping(

@@ -9,6 +9,13 @@ def get_gaussian_latent_vector(
     return tf.random.normal(shape=(batch_size, *input_shape))
 
 
+class FeatureMatchingError(tf.keras.losses.Loss):
+    def call(self, X_real: tf.Tensor, X_fake: tf.Tensor) -> tf.Tensor:
+        return tf.reduce_mean(
+            tf.square(tf.reduce_mean(X_real, axis=0) - tf.reduce_mean(X_fake, axis=0))
+        )
+
+
 class GAN(tf.keras.Model):
     def __init__(
         self,
@@ -35,7 +42,7 @@ class GAN(tf.keras.Model):
         self.g_loss_unsup = tf.keras.losses.BinaryCrossentropy(
             from_logits=True, name="g_loss_unsup"
         )
-        self.g_loss_feature_matching = tf.keras.losses.MeanSquaredError(
+        self.g_loss_feature_matching = FeatureMatchingError(
             name="g_loss_feature_matching"
         )
         self.g_loss_tracker = tf.keras.metrics.Mean("g_loss")
