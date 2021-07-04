@@ -1,158 +1,135 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-import numpy as np
 import tensorflow as tf
 
-from bert import get_bert
-from constants import BERT_POOLED_OUTPUT_DIMS, EPSILON, LATENT_VECTOR_DIM, RANDOM_SEED
-from discriminator import discriminator
-from generator import generator
 
-D_LR = 0.0004
-G_LR = 0.0004
-
-np.random.seed(RANDOM_SEED)
-tf.random.set_seed(RANDOM_SEED)
-
-
-def get_random_noise(z_dim: int, batch_size: int) -> tf.Tensor:
-    return tf.random.uniform([batch_size, z_dim], minval=0, maxval=1)
-
-
-def loss_G_feature_matching(bert_features: tf.Tensor, generator_features: tf.Tensor):
-    return tf.reduce_mean(
-        tf.square(
-            tf.reduce_mean(bert_features, axis=0)
-            - tf.reduce_mean(generator_features, axis=0)
-        )
-    )
-
-
-def loss_G_unsupervised(D_fake_probs: tf.Tensor) -> tf.Tensor:
-    return -tf.reduce_mean(tf.math.log(1 - D_fake_probs[:, -1] + EPSILON))
-
-
-def loss_D_unsuperverised(
-    D_real_probs: tf.Tensor, D_fake_probs: tf.Tensor
+def get_gaussian_latent_vector(
+    batch_size: int, input_shape: Tuple[int, ...]
 ) -> tf.Tensor:
-    unsupervised_1 = -tf.reduce_mean(tf.math.log(1 - D_real_probs[:, -1] + EPSILON))
-    unsupervised_2 = -tf.reduce_mean(tf.math.log(D_fake_probs[:, -1] + EPSILON))
-    return unsupervised_1 + unsupervised_2
+    return tf.random.normal(shape=(batch_size, *input_shape))
 
 
-def loss_D_supervised(y: tf.Tensor, D_real_logits: tf.Tensor) -> tf.Tensor:
-    filtered_logits = D_real_logits[:, :-1]
-    real_log_probs = tf.nn.log_softmax(filtered_logits, axis=-1)
-    per_example_loss = -tf.math.reduce_sum(y[:, :-1] * real_log_probs, axis=-1)
-    # don't consider the unlabeled examples when computing supervised loss
-    is_unlabeled = y[:, -1]
-    is_labeled = ~tf.cast(is_unlabeled, dtype=tf.bool)
+class GAN(tf.keras.Model):
+    def __init__(
+        self,
+        generator: tf.keras.Model,
+        discriminator: tf.keras.Model,
+        latent_vector_size: int,
+        name: Optional[str] = None,
+    ) -> None:
+        super(GAN, self).__init__(name=name)
+        self.generator = generator
+        self.discriminator = discriminator
+        self.latent_vector_size = latent_vector_size
 
-    tf.boolean_mask(per_example_loss, is_labeled)
-    return tf.math.reduce_mean(per_example_loss)
-
-
-# optimizers
-g_optimizer = tf.keras.optimizers.Adam(G_LR)
-d_optimizer = tf.keras.optimizers.Adam(D_LR)
-
-
-# metrics
-supervised_loss_tracker = tf.metrics.Mean(name="supervised_loss")
-g_loss_tracker = tf.metrics.Mean(name="g_loss")
-g_loss_u_tracker = tf.metrics.Mean(name="g_loss_u")
-g_loss_feature_matching_tracker = tf.metrics.Mean(name="g_loss_feature_matching")
-d_loss_tracker = tf.metrics.Mean(name="d_loss")
-accuracy_tracker = tf.keras.metrics.CategoricalAccuracy(name="categorical_accuracy")
-categorical_crossentropy_tracker = tf.keras.metrics.CategoricalCrossentropy(
-    name="categorical_crossentropy",
-    from_logits=False,
-)
-
-
-class GanBert(tf.keras.Model):
-    def __init__(self) -> None:
-        super(GanBert, self).__init__()
-        self.latent_vector_dim = LATENT_VECTOR_DIM
-        self.B = get_bert()
-        self.G = generator((self.latent_vector_dim,))
-        self.D = discriminator((BERT_POOLED_OUTPUT_DIMS,))
-
-    def compile(self, d_optimizer, g_optimizer) -> None:
-        super(GanBert, self).compile()
+    def compile(
+        self,
+        g_optimizer: tf.keras.optimizers.Optimizer,
+        d_optimizer: tf.keras.optimizers.Optimizer,
+    ) -> None:
+        super(GAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
 
-    @property
-    def metrics(self) -> List[tf.keras.metrics.Metric]:
-        return [
-            supervised_loss_tracker,
-            g_loss_tracker,
-            g_loss_u_tracker,
-            g_loss_feature_matching_tracker,
-            d_loss_tracker,
-            accuracy_tracker,
-            categorical_crossentropy_tracker,
-        ]
+        # g_losses and metrics
+        self.g_loss_unsup = tf.keras.losses.BinaryCrossentropy(
+            from_logits=True, name="g_loss_unsup"
+        )
+        self.g_loss_feature_matching = tf.keras.losses.MeanSquaredError(
+            name="g_loss_feature_matching"
+        )
+        self.g_loss_tracker = tf.keras.metrics.Mean("g_loss")
 
-    def call(self, inputs: Any) -> tf.Tensor:
-        x = self.B(inputs)
-        y_pred = self.D(x)
-        return tf.nn.softmax(y_pred[:, :-1])
+        # d losses and metrics
+        self.d_loss_sup = tf.keras.losses.CategoricalCrossentropy(
+            from_logits=True, name="d_loss_sup"
+        )
+        self.d_loss_unsup = tf.keras.losses.BinaryCrossentropy(
+            from_logits=True, name="d_loss_unsup"
+        )
+        self.d_loss_tracker = tf.keras.metrics.Mean("d_loss")
+
+        # total loss
+        self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
+
+        self.classifier_loss = tf.keras.metrics.CategoricalCrossentropy(
+            from_logits=True, name="classifier_loss"
+        )
+        self.classifier_accuracy = tf.keras.metrics.CategoricalAccuracy(
+            name="classifier_accuracy"
+        )
+
+    @property
+    def metrics(self):
+        return [
+            self.g_loss_tracker,
+            self.d_loss_tracker,
+            self.total_loss_tracker,
+        ] + self.task_metrics
+
+    def call(self, X: tf.Tensor) -> tf.Tensor:
+        return self.discriminator(X)[:, :-1]
 
     def test_step(self, data: Tuple[Any, tf.Tensor]) -> Dict[str, int]:
         X, y = data
-        y_probs = self(X, training=False)
-        accuracy_tracker.update_state(y, y_probs)
-        categorical_crossentropy_tracker.update_state(y, y_probs)
+        y_logits = self(X, training=False)
+        y_probs = tf.nn.softmax(y_logits)
+        self.classifier_loss.update_state(y, y_probs)
+        self.classifier_accuracy.update_state(y, y_probs)
         return {m.name: m.result() for m in self.metrics}
 
-    def train_step(self, data):
+    @property
+    def task_metrics(self):
+        return [
+            self.classifier_loss,
+            self.classifier_accuracy,
+        ]
+
+    def train_step(self, data: Tuple[tf.Tensor, tf.Tensor]) -> Dict[str, float]:
         X, y = data
+
         batch_size = tf.shape(y)[0]
+        latent_vector = tf.random.normal(shape=(batch_size, self.latent_vector_size))
 
-        random_latent_vectors = tf.random.normal(
-            shape=(batch_size, self.latent_vector_dim)
-        )
         with tf.GradientTape() as d_tape, tf.GradientTape() as g_tape:
-            real_bert_encoding = self.B(X, training=True)
-            fake_bert_encoding = self.G(random_latent_vectors, training=True)
+            # predictions
+            fake_X = self.generator(latent_vector, training=True)
+            fake_probs = self.discriminator(fake_X, training=True)
+            prob_fake_is_fake = fake_probs[:, -1]
+            real_probs = self.discriminator(X, training=True)
+            y_pred = real_probs[:, :-1]
 
-            combined_encodings = tf.concat(
-                [real_bert_encoding, fake_bert_encoding], axis=0
+            # g losses
+            g_loss_unsup = self.g_loss_unsup(
+                tf.zeros_like(prob_fake_is_fake), prob_fake_is_fake
+            )
+            g_loss_feature_matching = self.g_loss_feature_matching(X, fake_X)
+            g_loss = g_loss_unsup + g_loss_feature_matching
+            self.g_loss_tracker.update_state(g_loss)
+
+            # d losses
+            d_loss_sup = self.d_loss_sup(y, y_pred)
+            d_loss_unsup = self.d_loss_unsup(
+                tf.ones_like(prob_fake_is_fake), prob_fake_is_fake
+            )
+            d_loss = d_loss_sup + d_loss_unsup
+            self.d_loss_tracker.update_state(d_loss)
+
+            self.total_loss_tracker.update_state(
+                self.d_loss_tracker.result() + self.g_loss_tracker.result()
             )
 
-            y_logits = self.D(combined_encodings, training=True)
-            y_probs = tf.nn.softmax(y_logits)
-            D_real_logits, D_fake_logits = tf.split(
-                y_logits, [batch_size, tf.shape(y_probs)[0] - batch_size], axis=0
-            )
-            D_real_probs, D_fake_probs = tf.split(
-                y_probs, [batch_size, tf.shape(y_probs)[0] - batch_size], axis=0
-            )
+            self.classifier_accuracy(y, y_pred)
+            self.classifier_loss(y, y_pred)
 
-            g_loss_u = loss_G_unsupervised(D_fake_probs)
-            g_loss_feature_matching = loss_G_feature_matching(
-                real_bert_encoding, fake_bert_encoding
-            )
-            g_loss = g_loss_u + g_loss_feature_matching
+        g_gradients = g_tape.gradient(g_loss, self.generator.trainable_variables)
+        d_gradients = d_tape.gradient(d_loss, self.discriminator.trainable_variables)
 
-            D_loss_s = loss_D_supervised(y, D_real_logits)
-            D_loss_u = loss_D_unsuperverised(D_real_probs, D_fake_probs)
-            d_loss = D_loss_s + D_loss_u
+        self.g_optimizer.apply_gradients(
+            zip(g_gradients, self.generator.trainable_variables)
+        )
+        self.d_optimizer.apply_gradients(
+            zip(d_gradients, self.discriminator.trainable_variables)
+        )
 
-        supervised_loss_tracker.update_state(D_loss_s)
-        g_loss_tracker.update_state(g_loss)
-        g_loss_u_tracker.update_state(g_loss_u),
-        g_loss_feature_matching_tracker(g_loss_feature_matching),
-        d_loss_tracker.update_state(d_loss)
-        accuracy_tracker.update_state(y[:, :-1], D_real_probs[:, :-1])
-        categorical_crossentropy_tracker.update_state(y[:, :-1], D_real_probs[:, :-1])
-
-        g_gradients = g_tape.gradient(g_loss, self.G.trainable_variables)
-        d_gradients = d_tape.gradient(d_loss, self.D.trainable_variables)
-
-        self.g_optimizer.apply_gradients(zip(g_gradients, self.G.trainable_variables))
-        self.d_optimizer.apply_gradients(zip(d_gradients, self.D.trainable_variables))
-
-        return {m.name: m.result() for m in self.metrics}
+        return {metric.name: metric.result() for metric in self.metrics}
