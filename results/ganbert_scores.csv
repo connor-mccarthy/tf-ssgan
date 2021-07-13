@@ -2,5 +2,5 @@
 g_loss,0.0
 d_loss,0.0
 total_loss,0.0
-classifier_loss,0.9508042931556702
-classifier_accuracy,0.8374999761581421
+classifier_loss,1.0117381811141968
+classifier_accuracy,0.7743750214576721
