@@ -84,10 +84,10 @@ def fit_baseline_model(use_saved_weights=False) -> None:
 def fit_ganbert(use_saved_weights=False) -> None:
     LATENT_VECTOR_SIZE = 100
     generator = make_generator(
-        input_shape=(LATENT_VECTOR_SIZE,), output_dims=BERT_POOLED_OUTPUT_DIMS
+        input_shape=(LATENT_VECTOR_SIZE,), output_units=BERT_POOLED_OUTPUT_DIMS
     )
     discriminator = make_discriminator(
-        input_shape=(BERT_POOLED_OUTPUT_DIMS,), n_classes=AG_NEWS_NUM_LABELED_CLASSES
+        input_units=BERT_POOLED_OUTPUT_DIMS, n_classes=AG_NEWS_NUM_LABELED_CLASSES
     )
     ganbert = GANBERT(
         generator=generator,
