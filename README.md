@@ -19,6 +19,16 @@ This is a reproduction of a model from the 2020 [research paper](https://www.acl
 ![](./ganbert.jpeg)  
 Source: [GAN-BERT paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf)
 
+## Reproducing
+With Python 3.8.10:
+
+```sh
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python src/main.py
+```
+
 ## Citation
 
 Image and GAN-BERT from:
