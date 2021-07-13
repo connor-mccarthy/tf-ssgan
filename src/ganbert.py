@@ -16,15 +16,15 @@ class FeatureMatchingError(tf.keras.losses.Loss):
         )
 
 
-class GAN(tf.keras.Model):
+class SSGAN(tf.keras.Model):
     def __init__(
         self,
         generator: tf.keras.Model,
         discriminator: tf.keras.Model,
-        latent_vector_size: int,
+        latent_vector_size: int = 100,
         name: Optional[str] = None,
     ) -> None:
-        super(GAN, self).__init__(name=name)
+        super(SSGAN, self).__init__(name=name)
         self.generator = generator
         self.discriminator = discriminator
         self.latent_vector_size = latent_vector_size
@@ -34,7 +34,7 @@ class GAN(tf.keras.Model):
         g_optimizer: tf.keras.optimizers.Optimizer,
         d_optimizer: tf.keras.optimizers.Optimizer,
     ) -> None:
-        super(GAN, self).compile()
+        super(SSGAN, self).compile()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
 
@@ -140,3 +140,6 @@ class GAN(tf.keras.Model):
         )
 
         return {metric.name: metric.result() for metric in self.metrics}
+
+
+GANBERT = SSGAN
