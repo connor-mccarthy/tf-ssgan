@@ -16,7 +16,7 @@
 
 A simple API for a complex idea in current deep learning research: semi-supervised classification using generative adversarial networks (SSGANs).
 
-This particular flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT. See [ganbert/](`./ganbert/) for an implementation of the GANBERT model descibred in the paper using the `tf-ssgan` library.
+This particular flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT (see [citation](#citation)). See [ganbert/](`./ganbert/) for an implementation of the GANBERT model descibred in the paper using the `tf-ssgan` library.
 
 ## Getting Started
 
