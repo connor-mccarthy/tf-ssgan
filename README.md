@@ -14,9 +14,9 @@
 </a>
 </div>
 
-A super simple API implementing a complex idea in current deep learning research: semi-supervised classification using generative adversarial networks (SSGANs).
+A simple API for a complex idea in current deep learning research: semi-supervised classification using generative adversarial networks (SSGANs).
 
-In particular, this flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT. See [ganbert/](`./ganbert/) for an implementation of the GANBERT model as it described in the paper using the `SSGAN` model from this library.
+This particular flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT. See [ganbert/](`./ganbert/) for an implementation of the GANBERT model descibred in the paper using the `tf-ssgan` library.
 
 ## Getting Started
 
@@ -28,7 +28,7 @@ pip install git+https://github.com/connor-mccarthy/tf-ssgan.git
 
 ### Code
 
-This implementation abstracts away much of the complexity of creating a semi-supervised GAN (SSGAN) so that you can implement one via the Keras Model API. This makes it easy to implement an SSGAN for diverse classification problems.
+This implementation uses the simple Keras [`Model`](https://www.tensorflow.org/api_docs/python/tf/keras/Model) API. This makes it easy to implement an SSGAN for diverse classification problems.
 
 ```python
 from tf_ssgan import SSGAN
@@ -52,7 +52,7 @@ ssgan.fit(
   train_ds,
   validation_data=val_ds,
   epochs=1000,
-  )
+)
 ```
 
 ## Reproducing GANBERT
