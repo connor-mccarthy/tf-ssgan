@@ -57,6 +57,8 @@ ssgan.fit(
 
 ## Reproducing GANBERT
 
+With Python 3.8.10:
+
 ```python
 python -m venv .venv
 source .venv/bin/activate
