@@ -18,7 +18,7 @@ A super simple API implementing a complex idea in current deep learning research
 
 In particular, this flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT. See [ganbert/](`./ganbert/) for an implementation of the GANBERT model as it described in the paper using the `SSGAN` model from this library.
 
-## 📋 Getting Started
+## Getting Started
 
 ### Installation
 
@@ -55,7 +55,7 @@ ssgan.fit(
   )
 ```
 
-## 🔁 Reproducing GANBERT
+## Reproducing GANBERT
 
 ```python
 python -m venv .venv
@@ -64,7 +64,7 @@ pip install -r ganbert/ganbert_requirements.txt
 python ganbert
 ```
 
-## 🖋️ Citation
+## Citation
 
 GANBERT paper:
 
