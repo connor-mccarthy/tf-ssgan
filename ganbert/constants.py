@@ -1,8 +1,8 @@
 import os
 
-PROJECT_ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
-SAVED_MODEL_DIR = os.path.join(PROJECT_ROOT, "saved_models")
-RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
+GANBERT_ROOT = os.path.realpath(os.path.dirname(__file__))
+SAVED_MODEL_DIR = os.path.join(GANBERT_ROOT, "saved_models")
+RESULTS_DIR = os.path.join(GANBERT_ROOT, "results")
 
 BERT_POOLED_OUTPUT_DIMS = 512
 RANDOM_SEED = 0

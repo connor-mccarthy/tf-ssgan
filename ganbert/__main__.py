@@ -15,10 +15,10 @@ import colorama  # noqa: E402
 import pandas as pd  # noqa: E402
 from colorama import Fore  # noqa: E402
 from plot_keras_history import plot_history  # noqa: E402
+from tf_ssgan import SSGAN  # noqa: E402
 
 from constants import RESULTS_DIR, SAVED_MODEL_DIR  # noqa: E402
 from data import test_ds, train_ds, val_ds  # noqa: E402
-from ganbert import GANBERT  # noqa: E402
 from model_components import make_baseline_classifier  # noqa: E402
 from model_components import make_discriminator, make_generator  # noqa: E402
 from training_config import AG_NEWS_NUM_LABELED_CLASSES  # noqa: E402
@@ -89,7 +89,7 @@ def fit_ganbert(use_saved_weights=False) -> None:
     discriminator = make_discriminator(
         input_units=BERT_POOLED_OUTPUT_DIMS, n_classes=AG_NEWS_NUM_LABELED_CLASSES
     )
-    ganbert = GANBERT(
+    ganbert = SSGAN(
         generator=generator,
         discriminator=discriminator,
         latent_vector_size=LATENT_VECTOR_SIZE,

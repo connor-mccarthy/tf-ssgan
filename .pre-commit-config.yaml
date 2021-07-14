@@ -12,14 +12,24 @@ repos:
       - id: black
         name: black
         language: python
-        language_version: python3.7
         entry: black
         types: [python]
         stages: [commit]
       - id: mypy
         name: mypy
         language: python
-        language_version: python3.7
         entry: mypy
         types: [python]
+        stages: [commit]
+      - id: update_requirements
+        name: update requirements
+        language: python
+        entry: poetry export --without-hashes -f requirements.txt --output requirements.txt
+        pass_filenames: false
+        stages: [commit]
+      - id: update_dev_requirements
+        name: update development requirements
+        language: python
+        entry: poetry export --dev --without-hashes -f requirements.txt --output dev_requirements.txt
+        pass_filenames: false
         stages: [commit]

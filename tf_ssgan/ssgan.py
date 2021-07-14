@@ -2,18 +2,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import tensorflow as tf
 
-
-def get_gaussian_latent_vector(
-    batch_size: int, input_shape: Tuple[int, ...]
-) -> tf.Tensor:
-    return tf.random.normal(shape=(batch_size, *input_shape))
-
-
-class FeatureMatchingError(tf.keras.losses.Loss):
-    def call(self, X_real: tf.Tensor, X_fake: tf.Tensor) -> tf.Tensor:
-        return tf.reduce_mean(
-            tf.square(tf.reduce_mean(X_real, axis=0) - tf.reduce_mean(X_fake, axis=0))
-        )
+from tf_ssgan.losses import FeatureMatchingError
 
 
 class SSGAN(tf.keras.Model):
@@ -140,6 +129,3 @@ class SSGAN(tf.keras.Model):
         )
 
         return {metric.name: metric.result() for metric in self.metrics}
-
-
-GANBERT = SSGAN

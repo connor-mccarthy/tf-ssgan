@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>GAN-BERT Implementation Tensorflow 2.5 </h1>
+  <h1>SSGAN Implementation Tensorflow</h1>
 
 <p align="center">
 
@@ -14,24 +14,59 @@
 </a>
 </div>
 
-This is a reproduction of a model from the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GAN-BERT, a generative adversarial approach to semi-supervised learning for natural language with neural networks.
+A super simple API implementing a complex idea in current deep learning research: semi-supervised classification using generative adversarial networks (SSGANs).
 
-![](./ganbert.jpeg)  
-Source: [GAN-BERT paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf)
+In particular, this flavor of SSGANs is motivated by and modeled after the 2020 [research paper](https://www.aclweb.org/anthology/2020.acl-main.191.pdf) on GANBERT. See [ganbert/](`./ganbert/) for an implementation of the GANBERT model as it described in the paper using the `SSGAN` model from this library.
 
-## Reproducing
-With Python 3.8.10:
+## 📋 Getting Started
+
+### Installation
 
 ```sh
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python src/main.py
+pip install git+https://github.com/connor-mccarthy/tf-ssgan.git
 ```
 
-## Citation
+### Code
 
-Image and GAN-BERT from:
+This implementation abstracts away much of the complexity of creating a semi-supervised GAN (SSGAN) so that you can implement one via the Keras Model API. This makes it easy to implement an SSGAN for diverse classification problems.
+
+```python
+from tf_ssgan import SSGAN
+
+# see ./ganbert/model_components.py for generator/discriminator details
+generator = make_generator(...)
+discriminator = make_discriminator(...)
+
+ssgan = SSGAN(
+    generator=generator,
+    discriminator=discriminator,
+    name="my_ssgan",
+)
+
+ssgan.compile(
+    g_optimizer=tf.keras.optimizers.Adam(1e-4),
+    d_optimizer=tf.keras.optimizers.Adam(1e-4),
+)
+
+ssgan.fit(
+  train_ds,
+  validation_data=val_ds,
+  epochs=1000,
+  )
+```
+
+## 🔁 Reproducing GANBERT
+
+```python
+python -m venv .venv
+source .venv/bin/activate
+pip install -r ganbert/ganbert_requirements.txt
+python ganbert
+```
+
+## 🖋️ Citation
+
+GANBERT paper:
 
 ```bibtex
 @inproceedings{croce-etal-2020-gan,
